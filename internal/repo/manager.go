@@ -458,6 +458,14 @@ func (m *Manager) GetOwnedByUserJSON(ctx context.Context, includeCredentials boo
 	return util.DBQueryJSON(ctx, m.db, getUserReposDBQ, userID, includeCredentials)
 }
 
+// GetRemoteDigest gets the repository's digest available in the remote. In the
+// case of git based repositories, the digest corresponds to the hash of the
+// last commit. In OCI based repositories, it is the digest of the image the
+// repository url points to.
+func (m *Manager) GetRemoteDigest(ctx context.Context, r *hub.Repository) (string, error) {
+	return "", nil
+}
+
 // SetLastTrackingResults updates the timestamp and errors of the last tracking
 // of the provided repository in the database.
 func (m *Manager) SetLastTrackingResults(ctx context.Context, repositoryID, errs string) error {

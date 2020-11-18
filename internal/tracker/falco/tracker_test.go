@@ -32,9 +32,35 @@ func TestTracker(t *testing.T) {
 		VerifiedPublisher: false,
 	}
 
+	t.Run("error getting repository remote digest", func(t *testing.T) {
+		// Setup tracker and expectations
+		tw := newTrackerWrapper(r)
+		tw.rm.On("GetRemoteDigest", tw.ctx, r).Return("", tests.ErrFake)
+
+		// Run tracker and check expectations
+		err := tw.t.Track(tw.wg)
+		assert.True(t, errors.Is(err, tests.ErrFake))
+		tw.assertExpectations(t)
+	})
+
+	t.Run("digest has not changed, the repository has not been updated", func(t *testing.T) {
+		// Setup tracker and expectations
+		r := &hub.Repository{
+			Digest: "oldDigest",
+		}
+		tw := newTrackerWrapper(r)
+		tw.rm.On("GetRemoteDigest", tw.ctx, r).Return("oldDigest", nil)
+
+		// Run tracker and check expectations
+		err := tw.t.Track(tw.wg)
+		assert.Nil(t, err)
+		tw.assertExpectations(t)
+	})
+
 	t.Run("error cloning repository", func(t *testing.T) {
 		// Setup tracker and expectations
 		tw := newTrackerWrapper(r)
+		tw.rm.On("GetRemoteDigest", tw.ctx, r).Return("digest", nil)
 		tw.rc.On("CloneRepository", tw.ctx, r).Return("", "", tests.ErrFake)
 
 		// Run tracker and check expectations
@@ -46,6 +72,7 @@ func TestTracker(t *testing.T) {
 	t.Run("error loading repository registered packages", func(t *testing.T) {
 		// Setup tracker and expectations
 		tw := newTrackerWrapper(r)
+		tw.rm.On("GetRemoteDigest", tw.ctx, r).Return("digest", nil)
 		tw.rc.On("CloneRepository", tw.ctx, r).Return("", "", nil)
 		tw.rm.On("GetPackagesDigest", tw.ctx, r.RepositoryID).Return(nil, tests.ErrFake)
 
@@ -58,6 +85,7 @@ func TestTracker(t *testing.T) {
 	t.Run("no packages in path, nothing to do", func(t *testing.T) {
 		// Setup tracker and expectations
 		tw := newTrackerWrapper(r)
+		tw.rm.On("GetRemoteDigest", tw.ctx, r).Return("digest", nil)
 		tw.rc.On("CloneRepository", tw.ctx, r).Return(".", "testdata/path1", nil)
 		tw.rm.On("GetPackagesDigest", tw.ctx, r.RepositoryID).Return(nil, nil)
 		tw.rm.On("GetMetadata", mock.Anything).Return(&hub.RepositoryMetadata{}, nil)
@@ -71,6 +99,7 @@ func TestTracker(t *testing.T) {
 	t.Run("invalid package metadata file", func(t *testing.T) {
 		// Setup tracker and expectations
 		tw := newTrackerWrapper(r)
+		tw.rm.On("GetRemoteDigest", tw.ctx, r).Return("digest", nil)
 		tw.rc.On("CloneRepository", tw.ctx, r).Return(".", "testdata/path2", nil)
 		tw.rm.On("GetPackagesDigest", tw.ctx, r.RepositoryID).Return(nil, nil)
 		tw.rm.On("GetMetadata", mock.Anything).Return(&hub.RepositoryMetadata{}, nil)
@@ -85,6 +114,7 @@ func TestTracker(t *testing.T) {
 	t.Run("invalid version in package metadata file", func(t *testing.T) {
 		// Setup tracker and expectations
 		tw := newTrackerWrapper(r)
+		tw.rm.On("GetRemoteDigest", tw.ctx, r).Return("digest", nil)
 		tw.rc.On("CloneRepository", tw.ctx, r).Return(".", "testdata/path3", nil)
 		tw.rm.On("GetPackagesDigest", tw.ctx, r.RepositoryID).Return(nil, nil)
 		tw.rm.On("GetMetadata", mock.Anything).Return(&hub.RepositoryMetadata{}, nil)
@@ -99,6 +129,7 @@ func TestTracker(t *testing.T) {
 	t.Run("error registering package version", func(t *testing.T) {
 		// Setup tracker and expectations
 		tw := newTrackerWrapper(r)
+		tw.rm.On("GetRemoteDigest", tw.ctx, r).Return("digest", nil)
 		tw.rc.On("CloneRepository", tw.ctx, r).Return(".", "testdata/path4", nil)
 		tw.rm.On("GetPackagesDigest", tw.ctx, r.RepositoryID).Return(nil, nil)
 		tw.rm.On("GetMetadata", mock.Anything).Return(&hub.RepositoryMetadata{RepositoryID: r.RepositoryID}, nil)
@@ -115,6 +146,7 @@ func TestTracker(t *testing.T) {
 	t.Run("no need to register package version because it is already registered", func(t *testing.T) {
 		// Setup tracker and expectations
 		tw := newTrackerWrapper(r)
+		tw.rm.On("GetRemoteDigest", tw.ctx, r).Return("digest", nil)
 		tw.rc.On("CloneRepository", tw.ctx, r).Return(".", "testdata/path4", nil)
 		tw.rm.On("GetPackagesDigest", tw.ctx, r.RepositoryID).Return(map[string]string{
 			"test@0.1.0": "",
@@ -131,6 +163,7 @@ func TestTracker(t *testing.T) {
 	t.Run("package version registered successfully", func(t *testing.T) {
 		// Setup tracker and expectations
 		tw := newTrackerWrapper(r)
+		tw.rm.On("GetRemoteDigest", tw.ctx, r).Return("digest", nil)
 		tw.rc.On("CloneRepository", tw.ctx, r).Return(".", "testdata/path4", nil)
 		tw.rm.On("GetPackagesDigest", tw.ctx, r.RepositoryID).Return(nil, nil)
 		tw.rm.On("GetMetadata", mock.Anything).Return(&hub.RepositoryMetadata{RepositoryID: r.RepositoryID}, nil)
@@ -167,6 +200,7 @@ func TestTracker(t *testing.T) {
 	t.Run("error unregistering package version", func(t *testing.T) {
 		// Setup tracker and expectations
 		tw := newTrackerWrapper(r)
+		tw.rm.On("GetRemoteDigest", tw.ctx, r).Return("digest", nil)
 		tw.rc.On("CloneRepository", tw.ctx, r).Return(".", "testdata/path1", nil)
 		tw.rm.On("GetPackagesDigest", tw.ctx, r.RepositoryID).Return(map[string]string{
 			"test@0.1.0": "",
@@ -188,6 +222,7 @@ func TestTracker(t *testing.T) {
 	t.Run("package version unregistered successfully", func(t *testing.T) {
 		// Setup tracker and expectations
 		tw := newTrackerWrapper(r)
+		tw.rm.On("GetRemoteDigest", tw.ctx, r).Return("digest", nil)
 		tw.rc.On("CloneRepository", tw.ctx, r).Return(".", "testdata/path1", nil)
 		tw.rm.On("GetPackagesDigest", tw.ctx, r.RepositoryID).Return(map[string]string{
 			"test@0.1.0": "",

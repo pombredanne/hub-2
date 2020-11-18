@@ -1108,6 +1108,10 @@ func TestGetOwnedByOrgJSON(t *testing.T) {
 	})
 }
 
+func TestGetRemoteDigest(t *testing.T) {
+	// TODO
+}
+
 func TestGetOwnedByUserJSON(t *testing.T) {
 	ctx := context.WithValue(context.Background(), hub.UserIDKey, "userID")
 

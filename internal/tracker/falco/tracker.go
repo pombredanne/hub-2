@@ -52,6 +52,16 @@ func NewTracker(
 func (t *Tracker) Track(wg *sync.WaitGroup) error {
 	defer wg.Done()
 
+	// Check if repository has been updated
+	bypassDigestCheck := t.svc.Cfg.GetBool("tracker.bypassDigestCheck")
+	remoteDigest, err := t.svc.Rm.GetRemoteDigest(t.svc.Ctx, t.r)
+	if err != nil {
+		return fmt.Errorf("error getting repository remote digest: %w", err)
+	}
+	if t.r.Digest == remoteDigest && !bypassDigestCheck {
+		return nil
+	}
+
 	// Clone repository
 	t.logger.Debug().Msg("cloning repository")
 	tmpDir, packagesPath, err := t.svc.Rc.CloneRepository(t.svc.Ctx, t.r)
@@ -67,7 +77,6 @@ func (t *Tracker) Track(wg *sync.WaitGroup) error {
 	}
 
 	// Register available packages when needed
-	bypassDigestCheck := t.svc.Cfg.GetBool("tracker.bypassDigestCheck")
 	packagesAvailable := make(map[string]struct{})
 	basePath := filepath.Join(tmpDir, packagesPath)
 	err = filepath.Walk(basePath, func(pkgPath string, info os.FileInfo, err error) error {
