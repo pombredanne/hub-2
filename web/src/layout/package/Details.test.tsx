@@ -20,6 +20,7 @@ jest.mock('react-router-dom', () => ({
 }));
 
 const defaultProps = {
+  visibleSecurityReport: true,
   sortedVersions: [],
   activeChannel: null,
   onChannelChange: jest.fn(),
@@ -142,10 +143,10 @@ describe('Details', () => {
         />
       );
 
-      const chartVersions = queryByTestId('chartVersions');
-      expect(chartVersions).toBeInTheDocument();
-      const versions = queryAllByTestId('version');
-      expect(versions).toHaveLength(2);
+      const versions = queryByTestId('versions');
+      expect(versions).toBeInTheDocument();
+      const versionsList = queryAllByTestId('version');
+      expect(versionsList).toHaveLength(2);
     });
 
     it('renders placeholder when no versions', () => {
